@@ -1,1 +1,104 @@
  
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudpose-deployment
+  labels:
+    app: cloudpose
+    version: v1.0
+    component: web-service
+spec:
+  # 开始时使用1个副本，后续实验中会扩展到2、4、8
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudpose
+  template:
+    metadata:
+      labels:
+        app: cloudpose
+        version: v1.0
+        component: web-service
+    spec:
+      containers:
+      - name: cloudpose-container
+        # 替换为你的实际镜像名称
+        # 如果推送到Docker Hub: your-username/cloudpose:v1.0
+        # 如果使用本地镜像: cloudpose:v1.0
+        image: cloudpose:v1.0
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - containerPort: 60001
+          name: http
+          protocol: TCP
+        
+        # Assignment要求的资源限制
+        resources:
+          requests:
+            cpu: "0.5"      # 0.5 CPU核心
+            memory: "512Mi" # 512 MiB内存
+          limits:
+            cpu: "0.5"      # 0.5 CPU核心
+            memory: "512Mi" # 512 MiB内存
+        
+        # 环境变量
+        env:
+        - name: PORT
+          value: "60001"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        
+        # 健康检查配置
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 60001
+          initialDelaySeconds: 30   # 等待30秒后开始检查
+          periodSeconds: 10         # 每10秒检查一次
+          timeoutSeconds: 5         # 超时时间5秒
+          successThreshold: 1       # 连续1次成功才算ready
+          failureThreshold: 3       # 连续3次失败才算not ready
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 60001
+          initialDelaySeconds: 60   # 等待60秒后开始检查
+          periodSeconds: 30         # 每30秒检查一次
+          timeoutSeconds: 10        # 超时时间10秒
+          successThreshold: 1       # 连续1次成功才算alive
+          failureThreshold: 3       # 连续3次失败就重启
+      
+      # 重启策略
+      restartPolicy: Always
+      
+      # 优雅关闭时间（秒）
+      terminationGracePeriodSeconds: 30
+
+---
+# 可选：配置水平自动扩展（HPA）
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cloudpose-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cloudpose-deployment
+  minReplicas: 1
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

@@ -1,10 +1,3 @@
- """
-CloudPose Web Service - Assignment 1
-FIT5225 2025 T3
-
-主要的FastAPI Web服务，提供姿态检测和图像注释功能
-使用Model 3 (YOLO11l-pose)进行人体姿态估计
-"""
 
 import base64
 import cv2
@@ -69,7 +62,7 @@ def initialize_model():
     """初始化YOLO姿态检测模型"""
     global pose_detector
     try:
-        model_path = "./model3-yolo1/yolo11l-pose.pt"
+        model_path = "./model3-yolol/yolo11l-pose.pt"
         
         # 检查模型文件是否存在
         if not os.path.exists(model_path):

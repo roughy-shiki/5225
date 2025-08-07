@@ -1,5 +1,0 @@
-ultralytics
-opencv-python
-torch
-ultralytics-thop
-torchvision
